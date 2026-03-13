@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CMVLIVE Player</title>
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
+    
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        .video-container { width: 100%; height: 100%; position: relative; }
+        
+        /* Custom YouTube Style Seeker Bar */
+        .shaka-played-range { background: #FF4500 !important; }
+        .shaka-range-element::-webkit-slider-thumb { background: #FF4500 !important; }
+        
+        #watermark {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 70px;
+            opacity: 0.5;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <img id="watermark" src="https://fancode.com/favicon.ico">
+
+    <div class="video-container" data-shaka-player-container shaka-controls="true">
+        <video id="video" data-shaka-player autoplay playsinline class="w-full h-full"></video>
+        
+        <div id="loader" style="position:absolute; inset:0; background:black; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:50;">
+            <div style="width:40px; height:40px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: spin 1s linear infinite;"></div>
+            <p style="color:#FF4500; font-family:sans-serif; font-size:12px; margin-top:15px; font-weight:bold; letter-spacing:2px;">CMVLIVE BYPASSING...</p>
+        </div>
+    </div>
+
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+    <script>
+        const streamUrl = new URLSearchParams(window.location.search).get('url');
+
+        async function initPlayer() {
+            const video = document.getElementById('video');
+            const container = document.querySelector('[data-shaka-player-container]');
+            const loader = document.getElementById('loader');
+
+            const player = new shaka.Player();
+            const ui = new shaka.ui.Overlay(player, container, video);
+
+            // Configure YouTube Theme
+            ui.configure({
+                'controlPanelElements': ['play_pause', 'mute', 'time_and_duration', 'spacer', 'quality', 'fullscreen'],
+                'seekBarColors': { base: 'rgba(255,255,255,.2)', buffered: 'rgba(255,255,255,.4)', played: '#FF4500' }
+            });
+
+            // ─── THE CRITICAL FIX: APP SPOOFING ───
+            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                // This makes FanCode think the request is coming from their Android App
+                request.headers['User-Agent'] = 'ReactNativeVideo/9.3.0 (Linux;Android 13) AndroidXMedia3/1.6.1';
+                request.headers['Referer'] = 'https://fancode.com/';
+            });
+
+            player.configure({
+                streaming: { bufferingGoal: 10, rebufferingGoal: 2 }
+            });
+
+            try {
+                await player.load(streamUrl);
+                loader.style.display = 'none';
+            } catch (e) {
+                console.error('Error:', e);
+                loader.innerHTML = '<p style="color:red; font-family:sans-serif;">STREAM OFFLINE - RELOAD</p>';
+            }
+        }
+
+        document.addEventListener('shaka-ui-loaded', initPlayer);
+    </script>
+</body>
+</html>
+
