@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CMVLIVE - Premium Live Sports</title>
     <link rel="icon" href="https://fancode.com/favicon.ico" type="image/x-icon">
+    
+    <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
@@ -25,13 +28,24 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(15px); }
         #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; }
+        
+        /* Ad Container Styling */
+        .ad-slot { margin: 20px auto; display: flex; justify-content: center; overflow: hidden; min-height: 50px; }
     </style>
 </head>
 <body class="p-6 md:p-12">
 
-    <header class="text-center mb-16">
+    <header class="text-center mb-8">
         <h1 class="text-6xl font-black tracking-tighter text-white">CMV<span class="text-orange-500">LIVE</span></h1>
         <p class="text-slate-500 font-bold uppercase tracking-[0.4em] text-[10px] mt-2">Premium Experience by @cricketmemesverse873</p>
+        
+        <div class="ad-slot">
+            <script type="text/javascript">
+                aclib.runBanner({
+                    zoneId: '11069714',
+                });
+            </script>
+        </div>
     </header>
 
     <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
@@ -42,7 +56,16 @@
 
     <div id="qModal" class="modal">
         <div class="bg-[#0f172a] p-10 rounded-[45px] border-2 border-orange-600 w-full max-w-sm text-center">
-            <h3 class="text-2xl font-black mb-8 text-white uppercase italic">Select Quality</h3>
+            
+            <div class="ad-slot mb-4">
+                <script type="text/javascript">
+                    aclib.runBanner({
+                        zoneId: '11069714',
+                    });
+                </script>
+            </div>
+
+            <h3 class="text-2xl font-black mb-6 text-white uppercase italic">Select Quality</h3>
             <div id="qList" class="space-y-4"></div>
             <button onclick="closeModal()" class="mt-8 text-slate-500 font-bold uppercase text-[10px]">Close</button>
         </div>
