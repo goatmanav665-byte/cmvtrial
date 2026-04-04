@@ -5,91 +5,51 @@
     <title>CMVLIVE - Player</title>
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
-    
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         .video-container { width: 100%; height: 100%; position: relative; }
-        
-        /* Fire Theme Seeker Bar */
         .shaka-played-range { background: #FF4500 !important; }
         .shaka-range-element::-webkit-slider-thumb { background: #FF4500 !important; }
-        
         #watermark { position: absolute; top: 15px; right: 15px; width: 50px; opacity: 0.5; z-index: 10; pointer-events: none; }
-        #loader {
-            position: absolute; inset: 0; background: black;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; font-family: sans-serif;
-        }
-        .spin { width: 40px; height: 40px; border: 4px solid #FF4500; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader { position:absolute; inset:0; background:black; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:50; }
+        .spin { width:35px; height:35px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: s 1s linear infinite; }
+        @keyframes s { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
     <img id="watermark" src="https://fancode.com/favicon.ico">
-
     <div class="video-container" data-shaka-player-container shaka-controls="true">
         <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;"></video>
-        
-        <div id="loader">
-            <div class="spin"></div>
-            <p style="color:#FF4500; font-size:12px; margin-top:15px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">Authenticating Stream...</p>
-        </div>
+        <div id="loading" class="loader"><div class="spin"></div><p style="color:#FF4500; font-family:sans-serif; font-size:10px; font-weight:bold; margin-top:20px; letter-spacing:2px;">CMVLIVE LOADING...</p></div>
     </div>
-
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const streamUrl = urlParams.get('url');
-
-        async function initPlayer() {
+        const streamUrl = new URLSearchParams(window.location.search).get('url');
+        async function init() {
             const video = document.getElementById('video');
             const container = document.querySelector('[data-shaka-player-container]');
-            const loader = document.getElementById('loader');
-
-            if (!streamUrl) {
-                loader.innerHTML = '<p style="color:red">ERROR: NO URL</p>';
-                return;
-            }
-
+            const loader = document.getElementById('loading');
             const player = new shaka.Player(video);
             const ui = new shaka.ui.Overlay(player, container, video);
-
             ui.configure({
                 'controlPanelElements': ['play_pause', 'mute', 'time_and_duration', 'spacer', 'quality', 'fullscreen'],
                 'seekBarColors': { base: 'rgba(255,255,255,.2)', buffered: 'rgba(255,255,255,.4)', played: '#FF4500' }
             });
-
-            player.configure({
-                streaming: { bufferingGoal: 10, rebufferingGoal: 2 },
-                drm: { enabled: false } // Explicitly bypass DRM checks
-            });
-
-            // ─── THE BYPASS FILTER ───
+            player.configure({ streaming: { bufferingGoal: 10 }, drm: { enabled: false } });
+            // UPDATED BYPASS FILTER
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
                 request.headers['User-Agent'] = 'ReactNativeVideo/9.3.0 (Linux;Android 13) AndroidXMedia3/1.6.1';
                 request.headers['Referer'] = 'https://fancode.com/';
             });
-
             try {
-                await player.load(streamUrl);
-                loader.style.display = 'none';
+                await player.load(streamUrl); loader.style.display = 'none';
             } catch (e) {
-                console.error('Shaka Error:', e.code);
-                // Fallback for native Safari playback
-                if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = streamUrl;
-                    video.addEventListener('loadedmetadata', () => { loader.style.display = 'none'; video.play(); });
-                } else {
-                    loader.innerHTML = '<div style="text-align:center"><p style="color:#FF4500; font-weight:bold;">STREAM OFFLINE</p><button onclick="location.reload()" style="background:#FF4500; color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">RETRY</button></div>';
-                }
+                loader.innerHTML = '<p style="color:#FF4500; font-family:sans-serif; font-weight:bold;">OFFLINE</p>';
             }
         }
-
-        document.addEventListener('shaka-ui-loaded', initPlayer);
-        window.onload = () => { if(!window.shaka) initPlayer(); };
+        document.addEventListener('shaka-ui-loaded', init);
+        window.onload = () => { if(!window.shaka) init(); };
     </script>
 </body>
 </html>
