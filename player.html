@@ -16,36 +16,36 @@
 <body>
     <div class="video-container" data-shaka-player-container shaka-controls="true">
         <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;" crossorigin="anonymous"></video>
-        <div id="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold; letter-spacing:1px;">SECURING CONNECTION...</p></div>
+        <div id="loading" class="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold; letter-spacing:1px;">BYPASSING RESTRICTIONS...</p></div>
     </div>
-
     <script>
         const PROXY = "https://odd-wood-5267cmvproxy.goatmanav665.workers.dev/";
-        
-        // Dynamic Token (Updated May 2nd)
-        const D_TOKEN = "ed6277201f85861"; 
+        const TOKEN = "ed6277201f85861"; // Newest token from your 3rd source scan
 
         const params = new URLSearchParams(window.location.search);
         const rawId = params.get('id');
         const mQ = params.get('q') || '1080';
         
-        // Clean ID logic
+        // FIX: Extract only the numeric ID (strips _ENGLISH if present)
         const mId = rawId ? rawId.split('_')[0] : "";
 
         async function init() {
             const video = document.getElementById('video');
             const container = document.querySelector('[data-shaka-player-container]');
-            const loader = document.getElementById('loader');
+            const loader = document.getElementById('loading');
             const player = new shaka.Player(video);
             const ui = new shaka.ui.Overlay(player, container, video);
             
-            ui.configure({ 'seekBarColors': { base: 'rgba(255,255,255,.2)', played: '#FF4500' } });
+            ui.configure({
+                'controlPanelElements': ['play_pause', 'mute', 'time_and_duration', 'spacer', 'quality', 'fullscreen'],
+                'seekBarColors': { base: 'rgba(255,255,255,.2)', played: '#FF4500' }
+            });
 
-            // 1. Construct Link using the newest Token
-            const directUrl = `https://in-mc-fblive.fancode.com/mumbai/${mId}_english_hls_${D_TOKEN}_1ta-di_h264/${mQ}p.m3u8`;
+            // The direct URL with the working Token
+            const directUrl = `https://in-mc-fblive.fancode.com/mumbai/${mId}_english_hls_${TOKEN}_1ta-di_h264/${mQ}p.m3u8`;
             const proxiedUrl = `${PROXY}?url=${encodeURIComponent(directUrl)}`;
 
-            // 2. Strip Origin to bypass FanCode block
+            // Remove the 'Origin' to avoid the Worker conflict
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
                 delete request.headers['Origin'];
             });
@@ -55,7 +55,7 @@
                 loader.style.display = 'none';
             } catch (e) {
                 console.error("Shaka error:", e.code);
-                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">BYPASS FAILED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:20px; cursor:pointer;">REFRESH HOME</button></div>';
+                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">LINK EXPIRED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:20px; cursor:pointer;">REFRESH HOME</button></div>';
             }
         }
         document.addEventListener('shaka-ui-loaded', init);
