@@ -3,33 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <title>CMVLIVE - Premium Player</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .video-container { width: 100%; height: 100%; position: relative; }
-        #loader { position: absolute; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; color: #FF4500;}
-        .spin { width: 40px; height: 40px; border: 4px solid rgba(255,69,0,0.1); border-top-color: #FF4500; border-radius: 50%; animation: s 1s linear infinite; }
+        #watermark { position: absolute; top: 15px; right: 15px; width: 60px; opacity: 0.5; z-index: 10; pointer-events: none; }
+        #loader { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif; color: #FF4500;}
+        .spin { width:35px; height:35px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <script src="https://lchdxfootball.pages.dev/configurefc.js"></script> 
+
+    <img id="watermark" src="https://fancode.com/favicon.ico">
+
     <div class="video-container" data-shaka-player-container shaka-controls="true">
         <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;" crossorigin="anonymous"></video>
-        <div id="loading" class="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold; letter-spacing:1px;">BYPASSING RESTRICTIONS...</p></div>
+        <div id="loading" class="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold; letter-spacing: 2px;">AUTHENTICATING...</p></div>
     </div>
+
     <script>
         const PROXY = "https://odd-wood-5267cmvproxy.goatmanav665.workers.dev/";
-        const TOKEN = "ed6277201f85861"; // Newest token from your 3rd source scan
-
         const params = new URLSearchParams(window.location.search);
-        const rawId = params.get('id');
-        const mQ = params.get('q') || '1080';
-        
-        // FIX: Extract only the numeric ID (strips _ENGLISH if present)
-        const mId = rawId ? rawId.split('_')[0] : "";
+        const streamUrl = params.get('url');
 
         async function init() {
+            if (!streamUrl) { document.getElementById('loading').innerHTML = "NO URL"; return; }
+            
             const video = document.getElementById('video');
             const container = document.querySelector('[data-shaka-player-container]');
             const loader = document.getElementById('loading');
@@ -41,21 +44,23 @@
                 'seekBarColors': { base: 'rgba(255,255,255,.2)', played: '#FF4500' }
             });
 
-            // The direct URL with the working Token
-            const directUrl = `https://in-mc-fblive.fancode.com/mumbai/${mId}_english_hls_${TOKEN}_1ta-di_h264/${mQ}p.m3u8`;
-            const proxiedUrl = `${PROXY}?url=${encodeURIComponent(directUrl)}`;
-
-            // Remove the 'Origin' to avoid the Worker conflict
+            // Proxy every segment (.ts file) through your worker to kill CORS blocks
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                const uri = request.uris[0];
+                if (uri.includes('fancode.com') && !uri.includes(PROXY)) {
+                    request.uris[0] = `${PROXY}?url=${encodeURIComponent(uri)}`;
+                }
                 delete request.headers['Origin'];
             });
 
             try {
-                await player.load(proxiedUrl);
+                // Initialize using the "Super-Worker" handshake
+                await player.load(`${PROXY}?url=${encodeURIComponent(streamUrl)}`);
                 loader.style.display = 'none';
+                video.play();
             } catch (e) {
                 console.error("Shaka error:", e.code);
-                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">LINK EXPIRED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:20px; cursor:pointer;">REFRESH HOME</button></div>';
+                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">STREAM OFFLINE</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:15px; cursor:pointer;">REFRESH HOME</button></div>';
             }
         }
         document.addEventListener('shaka-ui-loaded', init);
