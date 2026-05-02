@@ -11,10 +11,14 @@
     <style>
         :root { --primary: #FF4500; --bg: #050512; }
         body { background-color: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; text-align: center; }
-        .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 32px; transition: 0.4s; }
+        .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 32px; transition: 0.4s; height: 100%; display: flex; flex-direction: column; }
         .match-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-        .btn-play { background: linear-gradient(135deg, #FF4500, #FF8C00); border-radius: 20px; font-weight: 800; transition: 0.3s; padding: 15px; width: 100%; color: white; display: block; }
-        #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; backdrop-filter: blur(10px); }
+        .btn-play { background: linear-gradient(135deg, #FF4500, #FF8C00); border-radius: 20px; font-weight: 800; transition: 0.3s; padding: 15px; width: 100%; color: white; margin-top: auto; }
+        .live-badge { background: #dc2626; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 30px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; backdrop-filter: blur(10px); }
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(15px); }
+        .quality-btn { background: #1e293b; border: 1px solid #253247; width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 15px; font-weight: bold; color: white; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body class="p-6 md:p-12">
@@ -22,67 +26,84 @@
     <header class="mb-10 text-6xl font-black italic tracking-tighter">CMV<span class="text-orange-500">LIVE</span></header>
 
     <div class="flex justify-center mb-16 min-h-[100px]">
-        <div class="rounded-xl border border-white/5 bg-white/5 p-2">
+        <div class="rounded-xl border border-white/10 bg-white/5 p-2">
             <script type="text/javascript">
                 if(window.aclib) { aclib.runBanner({ zoneId: '11072102' }); }
             </script>
         </div>
     </div>
 
-    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"></div>
+
+    <div id="qModal" class="modal">
+        <div class="bg-[#131d2f] p-10 rounded-[45px] border-2 border-orange-600 w-full max-w-sm">
+            <h3 class="text-2xl font-black mb-8 text-white uppercase italic">Select Quality</h3>
+            <div id="qList"></div>
+            <button onclick="closeModal()" class="mt-8 text-red-500 font-bold uppercase text-[10px]">Close</button>
         </div>
+    </div>
 
     <div id="tg-overlay">
-        <div class="bg-[#111827] border-2 border-orange-500 rounded-[40px] p-10 max-w-sm text-center">
+        <div class="bg-[#111827] border-2 border-orange-500 rounded-[40px] p-10 max-w-sm">
             <i class="fab fa-telegram-plane text-5xl text-orange-500 mb-6"></i>
             <h2 class="text-3xl font-black mb-4 uppercase text-white">Join The Squad</h2>
-            <p class="text-slate-400 text-sm mb-8">Backup links @cricketmemesverse873</p>
-            <a href="https://t.me/cricketmemesverse873" target="_blank" class="btn-play mb-4">JOIN NOW</a>
+            <p class="text-slate-400 text-sm mb-8 text-center">Backup links @cricketmemesverse873</p>
+            <a href="https://t.me/cricketmemesverse873" target="_blank" class="bg-blue-600 block w-full py-4 rounded-xl text-white mb-4 font-bold">JOIN NOW</a>
             <button onclick="closeTG()" class="text-slate-600 text-xs uppercase font-bold">Later</button>
         </div>
     </div>
 
     <script>
-        // Using the high-speed verified source
         const API = "https://raw.githubusercontent.com/doctor-8trange/zyphx8/refs/heads/main/data/fancode.json";
+        let matches = [];
 
         async function init() {
             try {
                 const res = await fetch(API + '?t=' + Date.now());
                 const data = await res.json();
-                const grid = document.getElementById('grid'); grid.innerHTML = "";
-                
-                (data.matches || []).forEach(m => {
-                    const isLive = (m.status || "").toUpperCase() === "LIVE";
-                    
-                    // SMART LINK EXTRACTION: Find the actual 1080p URL with the live token
-                    let smartUrl = "";
-                    if(m.auto_streams && m.auto_streams[0]) {
-                        const lines = m.auto_streams[0].auto.split('\n');
-                        // Find the line that actually contains the .m3u8 link (usually index 3 or 5)
-                        smartUrl = lines.find(l => l.includes('.m3u8') && !l.includes('RESOLUTION'));
-                    }
-                    if(!smartUrl) smartUrl = m.adfree_stream || m.dai_stream;
-
-                    grid.innerHTML += `
-                        <div class="match-card p-6 flex flex-col text-left">
-                            <div class="relative rounded-[22px] overflow-hidden mb-6 aspect-video bg-slate-900">
-                                <img src="${m.image}" class="w-full h-full object-cover">
-                                ${isLive ? '<span class="absolute top-4 left-4 bg-red-600 px-3 py-1 rounded-full text-[10px] font-black uppercase italic">Live</span>' : ''}
-                            </div>
-                            <h3 class="text-lg font-bold text-white mb-8 line-clamp-2">${m.title}</h3>
-                            <button onclick="watch('${encodeURIComponent(smartUrl)}')" class="btn-play ${!isLive ? 'opacity-20 pointer-events-none' : ''}">WATCH NOW</button>
-                        </div>`;
-                });
-            } catch (e) { console.log("Fetch Error"); }
+                matches = data.matches || [];
+                render();
+            } catch (e) { document.getElementById('grid').innerHTML = "Fetch Error."; }
         }
 
-        function watch(url) { window.location.href = `player.html?url=${url}`; }
+        function render() {
+            const grid = document.getElementById('grid'); grid.innerHTML = "";
+            matches.forEach((m, i) => {
+                const isLive = (m.status || "").toUpperCase() === "LIVE";
+                grid.innerHTML += `
+                    <div class="match-card p-6 text-left">
+                        <div class="relative rounded-[22px] overflow-hidden mb-6 aspect-video bg-slate-900">
+                            <img src="${m.image}" class="w-full h-full object-cover">
+                            ${isLive ? '<span class="absolute top-4 left-4 live-badge text-white uppercase">Live</span>' : ''}
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2 line-clamp-2">${m.title}</h3>
+                        <p class="text-gray-400 text-xs uppercase mb-6">${m.tournament}</p>
+                        <button onclick="${isLive ? `openQ(${i})` : ''}" class="btn-play ${!isLive ? 'opacity-20 grayscale' : ''}">
+                            ${isLive ? 'WATCH MATCH' : 'NOT LIVE'}
+                        </button>
+                    </div>`;
+            });
+        }
+
+        function openQ(idx) {
+            const m = matches[idx]; const list = document.getElementById('qList'); list.innerHTML = "";
+            const autoData = m.auto_streams?.[0]?.auto || "";
+            const lang = (m.language || "ENGLISH").toUpperCase();
+            
+            if(autoData.includes("RESOLUTION=")) {
+                autoData.split("\n").forEach((line, i, arr) => {
+                    if(line.includes("RESOLUTION=")) {
+                        const res = line.split("RESOLUTION=")[1].split(",")[0].split("x")[1] + "p";
+                        list.innerHTML += `<button onclick="go('${m.match_id}_${lang}', '${res.replace('p','')}')" class="quality-btn"><span>${res}</span> <i class="fas fa-play text-orange-500"></i></button>`;
+                    }
+                });
+                document.getElementById('qModal').style.display = 'flex';
+            }
+        }
+        function go(id, q) { window.location.href = `player.html?id=${id}&q=${q}`; }
+        function closeModal() { document.getElementById('qModal').style.display = 'none'; }
         function closeTG() { document.getElementById('tg-overlay').style.display = 'none'; sessionStorage.setItem('tg', '1'); }
-        window.onload = () => { 
-            init(); 
-            if(!sessionStorage.getItem('tg')) setTimeout(() => document.getElementById('tg-overlay').style.display='flex', 4000);
-        };
+        window.onload = () => { init(); if(!sessionStorage.getItem('tg')) setTimeout(() => document.getElementById('tg-overlay').style.display = 'flex', 4000); };
     </script>
 </body>
 </html>
