@@ -7,12 +7,12 @@
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #FF4500; --bg: #050512; }
-        body { background-color: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; background-image: radial-gradient(circle at 10% 20%, rgba(255, 69, 0, 0.15) 0%, transparent 40%); background-attachment: fixed; text-align: center; }
-        .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border-radius: 32px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .match-card:hover { transform: translateY(-12px); border-color: var(--primary); box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
+        body { background-color: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; text-align: center; }
+        .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 32px; transition: 0.4s ease-in-out; }
+        .match-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         .btn-play { background: linear-gradient(135deg, #FF4500, #FF8C00); border-radius: 20px; font-weight: 800; transition: 0.3s; }
         .live-dot { background: #FF0000; box-shadow: 0 0 10px #FF0000; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -22,12 +22,9 @@
 </head>
 <body class="p-6 md:p-12">
 
-    <header class="mb-10">
-        <h1 class="text-6xl md:text-7xl font-black italic tracking-tighter text-white">CMV<span class="text-orange-500">LIVE</span></h1>
-        <p class="text-slate-500 font-bold uppercase tracking-[0.4em] text-[10px] mt-2">Premium Experience</p>
-    </header>
+    <header class="mb-10 text-6xl font-black italic tracking-tighter">CMV<span class="text-orange-500">LIVE</span></header>
 
-    <div class="flex justify-center mb-16 min-h-[100px]">
+    <div class="flex justify-center mb-12 min-h-[100px]">
         <div class="rounded-xl border border-white/10 bg-white/5 p-2">
             <script type="text/javascript">
                 if(window.aclib) { aclib.runBanner({ zoneId: '11072102' }); }
@@ -35,12 +32,11 @@
         </div>
     </div>
 
-    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        </div>
+    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"></div>
 
     <div id="qModal" class="modal">
-        <div class="bg-[#0f172a] p-10 rounded-[45px] border-2 border-orange-600 w-full max-w-sm">
-            <h3 class="text-2xl font-black mb-8 text-white uppercase italic">Select Quality</h3>
+        <div class="bg-[#0f172a] p-10 rounded-[45px] border-2 border-orange-600 w-full max-w-sm text-center">
+            <h3 class="text-2xl font-black mb-8 text-white uppercase italic">Quality</h3>
             <div id="qList" class="space-y-4"></div>
             <button onclick="closeModal()" class="mt-8 text-slate-500 font-bold uppercase text-[10px]">Close</button>
         </div>
@@ -49,65 +45,46 @@
     <div id="tg-overlay">
         <div class="bg-[#111827] border-2 border-orange-500 rounded-[40px] p-10 max-w-sm">
             <i class="fab fa-telegram-plane text-5xl text-orange-500 mb-6"></i>
-            <h2 class="text-3xl font-black mb-4 uppercase italic text-white text-center">Join The Squad</h2>
-            <p class="text-slate-400 text-sm mb-8 text-center">Get backup match links & memes @cricketmemesverse873</p>
-            <a href="https://t.me/cricketmemesverse873" target="_blank" class="block w-full py-4 btn-play text-white mb-4 text-center">JOIN NOW</a>
-            <button onclick="closeTG()" class="text-slate-600 text-xs uppercase font-bold text-center">Later</button>
+            <h2 class="text-2xl font-black mb-4 uppercase text-white">Join Telegram</h2>
+            <p class="text-slate-400 text-sm mb-8">Backup links @cricketmemesverse873</p>
+            <a href="https://t.me/cricketmemesverse873" target="_blank" class="block w-full py-4 btn-play text-white mb-4">JOIN NOW</a>
+            <button onclick="closeTG()" class="text-slate-600 text-xs uppercase font-bold">Later</button>
         </div>
     </div>
 
     <script>
         const API = "https://raw.githubusercontent.com/doctor-8trange/zyphx8/refs/heads/main/data/fancode.json";
-        let matches = [];
-
         async function init() {
             try {
                 const res = await fetch(API + '?t=' + Date.now());
                 const data = await res.json();
-                matches = data.matches || [];
-                render();
-            } catch (e) { document.getElementById('grid').innerHTML = "Fetch Error."; }
-        }
-
-        function render() {
-            const grid = document.getElementById('grid'); grid.innerHTML = "";
-            matches.forEach((m, i) => {
-                const live = (m.status || "").toUpperCase() === "LIVE";
-                grid.innerHTML += `
-                    <div class="match-card p-6 flex flex-col text-left">
-                        <div class="relative rounded-[26px] overflow-hidden mb-6 aspect-video bg-slate-900">
-                            <img src="${m.image}" class="w-full h-full object-cover">
-                            ${live ? '<div class="absolute top-4 left-4 flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full"><div class="w-2 h-2 rounded-full live-dot"></div><span class="text-[10px] font-black uppercase">Live</span></div>' : ''}
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-orange-500 text-[10px] font-black uppercase tracking-widest mb-2">${m.tournament}</p>
-                            <h3 class="text-xl font-bold leading-tight mb-8 text-white line-clamp-2">${m.title}</h3>
-                        </div>
-                        <button onclick="${live ? `openQ(${i})` : ''}" class="btn-play w-full py-4 text-white text-xs tracking-widest ${!live ? 'opacity-20 grayscale cursor-not-allowed' : ''}">
-                            ${live ? 'WATCH NOW' : 'NOT LIVE'}
-                        </button>
-                    </div>`;
-            });
-        }
-
-        function openQ(idx) {
-            const m = matches[idx]; const list = document.getElementById('qList'); list.innerHTML = "";
-            const qualities = ["1080", "720", "540", "480", "360"];
-            const streamId = m.match_id || m.id;
-            
-            if(streamId) {
-                qualities.forEach(q => {
-                    list.innerHTML += `<button onclick="window.location.href='player.html?id=${streamId}&q=${q}'" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-800 flex justify-between items-center text-white hover:border-orange-500"><span class="font-black italic uppercase">${q}p Quality</span> <i class="fas fa-bolt text-orange-500"></i></button>`;
+                const grid = document.getElementById('grid'); grid.innerHTML = "";
+                (data.matches || []).forEach((m, i) => {
+                    const live = (m.status || "").toUpperCase() === "LIVE";
+                    grid.innerHTML += `
+                        <div class="match-card p-6 flex flex-col text-left">
+                            <img src="${m.image}" class="rounded-[22px] mb-6 aspect-video object-cover">
+                            <h3 class="text-lg font-bold text-white mb-8 line-clamp-2">${m.title}</h3>
+                            <button onclick="openQ('${m.match_id || m.id}')" class="btn-play w-full py-4 text-white text-xs tracking-widest ${!live ? 'opacity-20 grayscale cursor-not-allowed' : ''}">
+                                WATCH NOW
+                            </button>
+                        </div>`;
                 });
-                document.getElementById('qModal').style.display = 'flex';
-            } else {
-                window.location.href = `player.html?url=${encodeURIComponent(m.adfree_stream || m.dai_stream)}`;
-            }
+            } catch (e) { console.log(e); }
         }
-        
+        function openQ(id) {
+            const list = document.getElementById('qList'); list.innerHTML = "";
+            ["1080", "720", "480", "360"].forEach(q => {
+                list.innerHTML += `<button onclick="location.href='player.html?id=${id}&q=${q}'" class="w-full p-4 bg-slate-900 rounded-2xl text-white font-bold hover:border-orange-500 border border-transparent">${q}p Quality</button>`;
+            });
+            document.getElementById('qModal').style.display = 'flex';
+        }
         function closeModal() { document.getElementById('qModal').style.display = 'none'; }
-        function closeTG() { document.getElementById('tg-overlay').style.display = 'none'; sessionStorage.setItem('tg', 'seen'); }
-        window.onload = () => { init(); if(!sessionStorage.getItem('tg')) setTimeout(() => document.getElementById('tg-overlay').style.display = 'flex', 4000); };
+        function closeTG() { document.getElementById('tg-overlay').style.display = 'none'; sessionStorage.setItem('tg', '1'); }
+        window.onload = () => { 
+            init(); 
+            if(!sessionStorage.getItem('tg')) setTimeout(() => document.getElementById('tg-overlay').style.display='flex', 4000);
+        };
     </script>
 </body>
 </html>
