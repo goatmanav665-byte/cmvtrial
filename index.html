@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMVLIVE - Premium Live Sports</title>
+    <title>CMVLIVE - Premium Sports Hub</title>
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #FF4500; --bg: #050512; }
-        body { background-color: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; background-image: radial-gradient(circle at 10% 20%, rgba(255, 69, 0, 0.15) 0%, transparent 40%); background-attachment: fixed; text-align: center; }
-        .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(16px); border-radius: 32px; transition: 0.4s; }
+        body { background-color: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; text-align: center; }
+        .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 32px; transition: 0.4s; }
         .match-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-        .btn-play { background: linear-gradient(135deg, #FF4500, #FF8C00); border-radius: 20px; font-weight: 800; transition: 0.3s; padding: 15px; width: 100%; color: white; display: block; }
+        .btn-play { background: linear-gradient(135deg, #FF4500, #FF8C00); border-radius: 20px; font-weight: 800; transition: 0.3s; padding: 15px; width: 100%; color: white; }
         .live-dot { background: #FF0000; box-shadow: 0 0 10px #FF0000; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; backdrop-filter: blur(10px); }
+        #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; }
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(15px); }
     </style>
 </head>
@@ -36,7 +36,7 @@
 
     <div id="qModal" class="modal">
         <div class="bg-[#0f172a] p-10 rounded-[45px] border-2 border-orange-600 w-full max-w-sm">
-            <h3 class="text-2xl font-black mb-8 text-white uppercase italic text-center">Select Quality</h3>
+            <h3 class="text-2xl font-black mb-8 text-white uppercase italic text-center">Quality Selection</h3>
             <div id="qList" class="space-y-4"></div>
             <button onclick="closeModal()" class="mt-8 text-slate-500 font-bold uppercase text-[10px] block mx-auto">Close</button>
         </div>
@@ -45,9 +45,9 @@
     <div id="tg-overlay">
         <div class="bg-[#111827] border-2 border-orange-500 rounded-[40px] p-10 max-w-sm text-center">
             <i class="fab fa-telegram-plane text-5xl text-orange-500 mb-6"></i>
-            <h2 class="text-3xl font-black mb-4 uppercase text-white">Join The Squad</h2>
-            <p class="text-slate-400 text-sm mb-8">Backup links @cricketmemesverse873</p>
-            <a href="https://t.me/cricketmemesverse873" target="_blank" class="btn-play mb-4">JOIN NOW</a>
+            <h2 class="text-3xl font-black mb-4 uppercase text-white italic">Join Squad</h2>
+            <p class="text-slate-400 text-sm mb-8">Backup links & memes @cricketmemesverse873</p>
+            <a href="https://t.me/cricketmemesverse873" target="_blank" class="btn-play block mb-4">JOIN NOW</a>
             <button onclick="closeTG()" class="text-slate-600 text-xs uppercase font-bold">Later</button>
         </div>
     </div>
@@ -74,7 +74,7 @@
             } catch (e) { console.log(e); }
         }
         function openQ(rawId) {
-            const id = rawId.split('_')[0]; // Extacts numeric ID
+            const id = rawId.split('_')[0]; // FIX: Extract "142403" from "142403_ENGLISH"
             const list = document.getElementById('qList'); list.innerHTML = "";
             ["1080", "720", "480", "360"].forEach(q => {
                 list.innerHTML += `<button onclick="location.href='player.html?id=${id}&q=${q}'" class="w-full p-4 bg-slate-900 rounded-2xl text-white font-bold border border-transparent hover:border-orange-500">${q}p Quality</button>`;
