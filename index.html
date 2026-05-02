@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMVLIVE - Premium Sports</title>
+    <title>CMVLIVE - Premium Live Sports</title>
     <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -12,9 +12,9 @@
         :root { --primary: #FF4500; --bg: #050512; }
         body { background-color: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; text-align: center; }
         .match-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 32px; transition: 0.4s; }
-        .match-card:hover { transform: translateY(-10px); border-color: var(--primary); }
+        .match-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         .btn-play { background: linear-gradient(135deg, #FF4500, #FF8C00); border-radius: 20px; font-weight: 800; transition: 0.3s; padding: 15px; width: 100%; color: white; display: block; }
-        #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; backdrop-filter: blur(10px); }
+        #tg-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="p-6 md:p-12">
@@ -29,7 +29,8 @@
         </div>
     </div>
 
-    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"></div>
+    <div id="grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        </div>
 
     <div id="tg-overlay">
         <div class="bg-[#111827] border-2 border-orange-500 rounded-[40px] p-10 max-w-sm text-center">
@@ -42,26 +43,40 @@
     </div>
 
     <script>
+        // Using the high-speed verified source
         const API = "https://raw.githubusercontent.com/doctor-8trange/zyphx8/refs/heads/main/data/fancode.json";
+
         async function init() {
             try {
                 const res = await fetch(API + '?t=' + Date.now());
                 const data = await res.json();
                 const grid = document.getElementById('grid'); grid.innerHTML = "";
+                
                 (data.matches || []).forEach(m => {
                     const isLive = (m.status || "").toUpperCase() === "LIVE";
-                    // EXTRACT THE BEST AVAILABLE LINK
-                    const liveLink = m.adfree_stream || m.dai_stream || (m.auto_streams && m.auto_streams[0] ? m.auto_streams[0].auto.split('\n')[3] : "");
                     
+                    // SMART LINK EXTRACTION: Find the actual 1080p URL with the live token
+                    let smartUrl = "";
+                    if(m.auto_streams && m.auto_streams[0]) {
+                        const lines = m.auto_streams[0].auto.split('\n');
+                        // Find the line that actually contains the .m3u8 link (usually index 3 or 5)
+                        smartUrl = lines.find(l => l.includes('.m3u8') && !l.includes('RESOLUTION'));
+                    }
+                    if(!smartUrl) smartUrl = m.adfree_stream || m.dai_stream;
+
                     grid.innerHTML += `
                         <div class="match-card p-6 flex flex-col text-left">
-                            <img src="${m.image}" class="rounded-[22px] mb-6 aspect-video object-cover">
+                            <div class="relative rounded-[22px] overflow-hidden mb-6 aspect-video bg-slate-900">
+                                <img src="${m.image}" class="w-full h-full object-cover">
+                                ${isLive ? '<span class="absolute top-4 left-4 bg-red-600 px-3 py-1 rounded-full text-[10px] font-black uppercase italic">Live</span>' : ''}
+                            </div>
                             <h3 class="text-lg font-bold text-white mb-8 line-clamp-2">${m.title}</h3>
-                            <button onclick="watch('${encodeURIComponent(liveLink)}')" class="btn-play ${!isLive ? 'opacity-20 pointer-events-none' : ''}">WATCH NOW</button>
+                            <button onclick="watch('${encodeURIComponent(smartUrl)}')" class="btn-play ${!isLive ? 'opacity-20 pointer-events-none' : ''}">WATCH NOW</button>
                         </div>`;
                 });
-            } catch (e) { console.log(e); }
+            } catch (e) { console.log("Fetch Error"); }
         }
+
         function watch(url) { window.location.href = `player.html?url=${url}`; }
         function closeTG() { document.getElementById('tg-overlay').style.display = 'none'; sessionStorage.setItem('tg', '1'); }
         window.onload = () => { 
