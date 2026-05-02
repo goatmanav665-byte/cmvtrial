@@ -13,7 +13,7 @@
         .shaka-played-range { background: #FF4500 !important; }
         .shaka-range-element::-webkit-slider-thumb { background: #FF4500 !important; }
         #watermark { position: absolute; top: 15px; right: 15px; width: 50px; opacity: 0.5; z-index: 10; pointer-events: none; }
-        #loader { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif;}
+        .loader { position:absolute; inset:0; background:black; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif;}
         .spin { width:35px; height:35px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
     </style>
@@ -21,57 +21,49 @@
 <body>
     <img id="watermark" src="https://fancode.com/favicon.ico">
     <div class="video-container" data-shaka-player-container shaka-controls="true">
-        <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;"></video>
-        <div id="loader"><div class="spin"></div><p style="color:#FF4500; font-size:10px; font-weight:bold; margin-top:20px; letter-spacing:2px;">BYPASSING RESTRICTIONS...</p></div>
+        <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;" crossorigin="anonymous"></video>
+        <div id="loading" class="loader"><div class="spin"></div><p style="color:#FF4500; font-size:10px; font-weight:bold; margin-top:20px; letter-spacing:2px;">AUTHENTICATING...</p></div>
     </div>
-
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        let streamUrl = urlParams.get('url');
+        const params = new URLSearchParams(window.location.search);
+        let finalUrl = params.get('url');
+        
+        // NEW: Construct URL from ID and Quality if provided
+        const mId = params.get('id');
+        const mQ = params.get('q');
+        if(mId && mQ) {
+            // This is the FanCode HLS template found in the scanned code
+            finalUrl = `https://in-mc-fblive.fancode.com/mumbai/${mId}_hls_44fcc8b57454619_1ta-di_h264/${mQ}p.m3u8`;
+        }
 
         async function init() {
             const video = document.getElementById('video');
             const container = document.querySelector('[data-shaka-player-container]');
-            const loader = document.getElementById('loader');
-
-            if (!streamUrl) {
-                loader.innerHTML = '<p style="color:red">ERROR: LINK EXPIRED</p>';
-                return;
-            }
-
+            const loader = document.getElementById('loading');
             const player = new shaka.Player(video);
             const ui = new shaka.ui.Overlay(player, container, video);
-
+            
             ui.configure({
                 'controlPanelElements': ['play_pause', 'mute', 'time_and_duration', 'spacer', 'quality', 'fullscreen'],
                 'seekBarColors': { base: 'rgba(255,255,255,.2)', buffered: 'rgba(255,255,255,.4)', played: '#FF4500' }
             });
 
-            player.configure({
-                streaming: { bufferingGoal: 30 },
-                manifest: { retryParameters: { maxAttempts: 5 } }
-            });
+            player.configure({ streaming: { bufferingGoal: 30 }, drm: { enabled: false } });
 
-            // ─── THE CRITICAL NETWORK BYPASS ───
+            // THE BYPASS
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
-                // We spoof the User-Agent and Referer to look like the mobile app
                 request.headers['User-Agent'] = 'ReactNativeVideo/9.3.0 (Linux;Android 13) AndroidXMedia3/1.6.1';
                 request.headers['Referer'] = 'https://fancode.com/';
-                
-                // If the URL is already from a worker proxy, we don't change it.
-                // Otherwise, the browser's CORS policy will block segments.
+                delete request.headers['Origin'];
             });
 
             try {
-                await player.load(streamUrl);
+                await player.load(finalUrl);
                 loader.style.display = 'none';
             } catch (e) {
-                console.error("Load failed", e);
-                // Fallback: If Shaka fails, show a clean "Expired" message
-                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">LINK EXPIRED</p><p style="color:white; font-size:10px; margin-top:10px;">Check Telegram @cricketmemesverse873 for new link.</p></div>';
+                loader.innerHTML = '<p style="color:red; font-weight:bold;">LINK EXPIRED - REFRESH HOME</p>';
             }
         }
-
         document.addEventListener('shaka-ui-loaded', init);
         window.onload = () => { if(!window.shaka) init(); };
     </script>
