@@ -13,7 +13,7 @@
         .shaka-played-range { background: #FF4500 !important; }
         .shaka-range-element::-webkit-slider-thumb { background: #FF4500 !important; }
         #watermark { position: absolute; top: 15px; right: 15px; width: 50px; opacity: 0.5; z-index: 10; pointer-events: none; }
-        #loader { position:absolute; inset:0; background:black; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif;}
+        #loader { position:absolute; inset:0; background:black; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif; }
         .spin { width:35px; height:35px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
     </style>
@@ -22,16 +22,20 @@
     <img id="watermark" src="https://fancode.com/favicon.ico">
     <div class="video-container" data-shaka-player-container shaka-controls="true">
         <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;" crossorigin="anonymous"></video>
-        <div id="loading" class="loader"><div class="spin"></div><p style="color:#FF4500; font-size:10px; font-weight:bold; margin-top:20px; letter-spacing:2px; text-transform:uppercase;">Authenticating CMVLIVE...</p></div>
+        <div id="loader"><div class="spin"></div><p style="color:#FF4500; font-size:10px; font-weight:bold; margin-top:20px; letter-spacing:2px; text-transform:uppercase;">Authenticating CMV...</p></div>
     </div>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const streamUrl = urlParams.get('url');
+        const params = new URLSearchParams(window.location.search);
+        const mId = params.get('id');
+        const mQ = params.get('q') || '1080';
+        
+        // This is the direct HLS stream using the live template found in the scanned code
+        const streamUrl = `https://in-mc-fblive.fancode.com/mumbai/${mId}_english_hls_44fcc8b57454619_1ta-di_h264/${mQ}p.m3u8`;
 
         async function init() {
             const video = document.getElementById('video');
             const container = document.querySelector('[data-shaka-player-container]');
-            const loader = document.getElementById('loading');
+            const loader = document.getElementById('loader');
 
             const player = new shaka.Player(video);
             const ui = new shaka.ui.Overlay(player, container, video);
@@ -41,17 +45,19 @@
                 'seekBarColors': { base: 'rgba(255,255,255,.2)', buffered: 'rgba(255,255,255,.4)', played: '#FF4500' }
             });
 
+            // ─── CRITICAL CONFIG ───
             player.configure({
                 streaming: { bufferingGoal: 20 },
-                manifest: { retryParameters: { maxAttempts: 5 } }
+                drm: { clearKeys: {} }
             });
 
-            // ─── THE "SECRET" INTERCEPTOR (FROM SCAN) ───
+            // ─── THE "SECRET" INTERCEPTOR (BYPASS) ───
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
-                // This makes FanCode think the request is coming from their Android App
+                // Pretend to be a mobile device
                 request.headers['User-Agent'] = 'ReactNativeVideo/9.3.0 (Linux;Android 13) AndroidXMedia3/1.6.1';
                 request.headers['Referer'] = 'https://fancode.com/';
-                // Remove the Origin header to stop the CORS block on goatmanav665.workers.dev
+                
+                // CRITICAL: Delete 'Origin' so FanCode doesn't block goatmanav.workers.dev
                 delete request.headers['Origin'];
             });
 
@@ -59,7 +65,8 @@
                 await player.load(streamUrl);
                 loader.style.display = 'none';
             } catch (e) {
-                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">LINK EXPIRED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; color:white; border:none; padding:10px 20px; border-radius:50px; margin-top:15px; cursor:pointer;">REFRESH HOME</button></div>';
+                console.error("Load Error", e);
+                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">LINK EXPIRED</p><button onclick="window.location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:20px; cursor:pointer;">REFRESH HOME</button></div>';
             }
         }
         document.addEventListener('shaka-ui-loaded', init);
