@@ -2,31 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Premium Player</title>
+    <title>CMVLIVE Player</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .video-container { width: 100%; height: 100%; position: relative; }
-        #loader { position:absolute; inset:0; background:#000; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family: sans-serif; color: #FF4500;}
+        #loader { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif; color: #FF4500;}
         .spin { width:35px; height:35px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="video-container" data-shaka-player-container shaka-controls="true">
-        <video id="video" data-shaka-player autoplay playsinline crossorigin="anonymous" style="width:100%;height:100%;"></video>
+        <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;" crossorigin="anonymous"></video>
         <div id="loading" class="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold; letter-spacing: 1px;">BYPASSING RESTRICTIONS...</p></div>
     </div>
     <script>
+        // YOUR PROXY
         const PROXY = "https://odd-wood-5267cmvproxy.goatmanav665.workers.dev/";
-        const D_TOKEN = "ed6277201f85861"; // THE ACTIVE MAY 2026 TOKEN
+        
+        // LATEST TOKEN FROM SOURCE 4
+        const D_TOKEN = "ed6277201f85861"; 
 
         const params = new URLSearchParams(window.location.search);
         const rawId = params.get('id');
         const mQ = params.get('q') || '1080';
-        const mId = rawId ? rawId.split('_')[0] : ""; // Strips Doubled Language tags
+        
+        // FIX: Extract numeric ID (Fixes doubled language bug)
+        const mId = rawId ? rawId.split('_')[0] : "";
 
         async function init() {
             const video = document.getElementById('video');
@@ -38,7 +43,7 @@
             
             ui.configure({ 'seekBarColors': { base: 'rgba(255,255,255,.2)', played: '#FF4500' } });
 
-            // CRITICAL: Force Shaka to ignore Origin to prevent FanCode 403
+            // CRITICAL: Strip headers that reveal your domain
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
                 delete request.headers['Origin'];
             });
@@ -49,12 +54,14 @@
             try {
                 await player.load(`${PROXY}?url=${encodeURIComponent(finalUrl)}`);
                 loader.style.display = 'none';
+                video.play();
             } catch (e) {
-                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">STREAM OFFLINE</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:15px; cursor:pointer;">REFRESH HOME</button></div>';
+                console.error("Shaka error:", e.code);
+                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">BYPASS FAILED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:15px; cursor:pointer;">REFRESH HOME</button></div>';
             }
         }
         
-        // Stop browser extensions from crashing the player
+        // Fix for "TypeError of null" (Conflict Shield)
         window.onerror = () => true; 
 
         document.addEventListener('shaka-ui-loaded', init);
@@ -62,4 +69,3 @@
     </script>
 </body>
 </html>
-
