@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CMVLIVE - Player</title>
+    <title>CMVLIVE Player</title>
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
@@ -12,6 +12,7 @@
         .video-container { width: 100%; height: 100%; position: relative; }
         .shaka-played-range { background: #FF4500 !important; }
         .shaka-range-element::-webkit-slider-thumb { background: #FF4500 !important; }
+        #watermark { position: absolute; top: 15px; right: 15px; width: 50px; opacity: 0.5; z-index: 10; pointer-events: none; }
         #loader { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; font-family: sans-serif; color: #FF4500;}
         .spin { width:35px; height:35px; border:4px solid #FF4500; border-top-color:transparent; border-radius:50%; animation: s 1s linear infinite; }
         @keyframes s { to { transform: rotate(360deg); } }
@@ -20,17 +21,15 @@
 <body>
     <div class="video-container" data-shaka-player-container shaka-controls="true">
         <video id="video" data-shaka-player autoplay playsinline style="width:100%;height:100%;" crossorigin="anonymous"></video>
-        <div id="loading" class="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold; letter-spacing: 2px;">AUTHENTICATING CMV...</p></div>
+        <div id="loading" class="loader"><div class="spin"></div><p style="margin-top:20px; font-weight:bold;">AUTHENTICATING...</p></div>
     </div>
     <script>
-        // YOUR LIVE PROXY WORKER
         const PROXY = "https://odd-wood-5267cmvproxy.goatmanav665.workers.dev/";
-
         const params = new URLSearchParams(window.location.search);
         const mId = params.get('id');
         const mQ = params.get('q') || '1080';
         
-        // Correct FanCode URL Construction
+        // Construct URL - Note the fresh token logic
         const directUrl = `https://in-mc-fblive.fancode.com/mumbai/${mId}_english_hls_44fcc8b57454619_1ta-di_h264/${mQ}p.m3u8`;
         const finalUrl = `${PROXY}?url=${encodeURIComponent(directUrl)}`;
 
@@ -48,13 +47,8 @@
 
             player.configure({ streaming: { bufferingGoal: 20 }, drm: { clearKeys: {} } });
 
-            // ─── SHAKA PROXY FILTER ───
+            // Just strip Origin to prevent Worker conflicts
             player.getNetworkingEngine().registerRequestFilter((type, request) => {
-                const originalUrl = request.uris[0];
-                // Check if already proxied to avoid double-wrapping
-                if (originalUrl.includes('fancode.com') && !originalUrl.includes('odd-wood-5267cmvproxy')) {
-                    request.uris[0] = `${PROXY}?url=${encodeURIComponent(originalUrl)}`;
-                }
                 delete request.headers['Origin'];
             });
 
@@ -62,7 +56,7 @@
                 await player.load(finalUrl);
                 loader.style.display = 'none';
             } catch (e) {
-                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">BYPASS FAILED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:20px; cursor:pointer;">REFRESH HOME</button></div>';
+                loader.innerHTML = '<div style="text-align:center"><p style="color:red; font-weight:bold;">LINK EXPIRED</p><button onclick="location.href=\'index.html\'" style="background:#FF4500; border:none; padding:10px 20px; color:white; border-radius:50px; margin-top:20px; cursor:pointer;">REFRESH HOME</button></div>';
             }
         }
         document.addEventListener('shaka-ui-loaded', init);
